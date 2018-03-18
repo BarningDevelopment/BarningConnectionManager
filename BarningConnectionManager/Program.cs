@@ -39,9 +39,7 @@ namespace BarningConnectionManager
                           CreateNoWindow = true
                       }
                 };
-
                 process.Start();
-
                 var output = process.StandardOutput.ReadToEnd();
 
                 var lanProcess = new Process
@@ -77,81 +75,82 @@ namespace BarningConnectionManager
                 var mobielState = MobielOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("State"));
 
 
-
-                //check if there is a wifi connection interface 
-                if (output.Contains("There is no wireless interface on the system"))
-                {                   
-                    //enable wifi interface
-                    enableWiFi();
-                    //create profile to make sure
-                    createWifiProfile();
+            //als er geen mobiel adaptor loopt
+            if (output.Contains("There is no Mobile Broadband interface"))
+            {
+                createMobileProfile();
+                //zet adaptor aan
+                enableMobiel();
                 return;
-                }
-                else
+            }
+            else
+            {
+                //als de adaptor aan staat
+                try
                 {
-                    try
+                    //kijk of het profiel aan staat
+                    if (!mobielState.Contains("Connected"))
                     {
-                        if (wlanState.Contains("disconnected"))
-                        {
-                            //so create wlan profiel
-                            ColorTextAlert("wifi is not connected");                           
-                       
-                            ///createWifiProfile();
-                            createWifiProfile();
-                           
-                            ColorTextAlert("connect to D&M profile");
-                            connectToWifi(false);                           
-                        }
-                        else if (!wlanState.Contains("disconnected"))
-                        {
-                        filesystemwatcher_keepconnected();                        
-                        }
+                        //so profiel is not created make one
+                        ColorTextAlert("mobiel not connected");
+                        createMobileProfile();
+                        connectToMobiel(false);
                     }
-                    catch (NullReferenceException e)
+                    else if (mobielState.Contains("Connected"))
                     {
-                        ColorTextAlert("No mobiel interface found on the system");
-                        return;
+                        //connect to profiel   
+                        ColorText("Connect everything");
+                        filesystemwatcher_keepconnected();
                     }
                 }
-
-
-
-
-                //als er geen mobiel adaptor loopt
-                if (MobielOutput.Contains("There is no Mobile Broadband interface"))
+                catch (NullReferenceException e)
                 {
-                    createMobileProfile();
-                    //zet adaptor aan
-                    enableMobiel();
+                    ColorTextAlert("No mobile interface found on the system");
                     return;
                 }
-                else
+            }
+
+
+
+
+
+            //check if there is a wifi connection interface 
+            if (output.Contains("There is no wireless interface on the system"))
+            {
+                //enable wifi interface
+                enableWiFi();
+                //create profile to make sure
+                createWifiProfile();
+                return;
+            }
+            else
+            {
+                try
                 {
-                    //als de adaptor aan staat
-                    try
+                    if (wlanState.Contains("disconnected"))
                     {
-                        //kijk of het profiel aan staat
-                        if (mobielState.Contains("disconnected"))
-                        {
-                            //so profiel is not created make one
-                            ColorTextAlert("mobiel not connected");                           
-                            createMobileProfile();                           
-                             connectToMobiel(false);                            
-                        }
-                        else if (!mobielState.Contains("disconnected"))
-                        {
-                            //connect to profiel                           
-                            filesystemwatcher_keepconnected();
-                        }
+                        //so create wlan profiel
+                        ColorTextAlert("wifi is not connected");
+
+                        ///createWifiProfile();
+                        createWifiProfile();
+
+                        ColorTextAlert("connect to D&M profile");
+                        connectToWifi(false);
                     }
-                    catch (NullReferenceException e)
+                    else if (!wlanState.Contains("disconnected"))
                     {
-                        ColorTextAlert("No mobile interface found on the system");
-                        return;
+                        filesystemwatcher_keepconnected();
                     }
                 }
+                catch (NullReferenceException e)
+                {
+                    ColorTextAlert("No mobiel interface found on the system");
+                    return;
+                }
+            }
 
-                Console.Read();
+            Console.Read();
             }
 
         private static void ColorTextAlert(string message)
@@ -253,7 +252,7 @@ namespace BarningConnectionManager
                 File.WriteAllText(DataFile, profileXml);
                 ColorText("Wlan profile was succesfully updated.");
             }
-         private static void filesystemwatcher_keepconnected()
+        private static void filesystemwatcher_keepconnected()
             {
                 System.Diagnostics.Process proc = new System.Diagnostics.Process();
                 proc.StartInfo.FileName = "C:\\batchfiles\\mobielconnect_netsh_VRH\\installmnb_VRH.cmd";
