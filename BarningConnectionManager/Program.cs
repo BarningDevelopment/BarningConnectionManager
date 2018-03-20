@@ -21,6 +21,32 @@ namespace BarningConnectionManager
             Console.ResetColor();
         }
 
+        private static void ColorTextQuestion(string message)
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine(message);
+            Console.ResetColor();
+        }
+        static string WlanState()
+        {
+            var wlans = new Process
+            {
+                StartInfo =
+                {
+                    FileName ="netsh.exe",
+                    Arguments = "interface show interface name=\"Wi-Fi\" ",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow =true
+                }
+            };
+            wlans.Start();
+            var wlanOut = wlans.StandardOutput.ReadToEnd();
+            var AdminState = wlanOut.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("Administrative state"));
+
+            return AdminState;
+        }
+
         static void Main(string[] args)
         {
             var process = new Process
@@ -71,54 +97,77 @@ namespace BarningConnectionManager
             var mobielState = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("State"));
 
 
-            //als er geen mobiel adaptor loopt
-            if (MOutput.Contains("There is no Mobile Broadband interface"))
-            {
-                createMobileProfile();
-                enableMobiel();
-                return;
-            }
-            else
-            {
-                try
+            if (mobielState != null)
+            {           //als er geen mobiel adaptor loopt
+                if (MOutput.Contains("There is no Mobile Broadband interface"))
                 {
-                    if (!mobielState.Contains("connected"))
-                    {
-                        ColorTextAlert("mobiel not connected");
-                        connectToMobiel(false);
-                    }
+                    enableMobiel();
+                    createMobileProfile();
                 }
-                catch (NullReferenceException e)
+                else
                 {
-                    ColorTextAlert("No mobile interface found on the system" + e);
+                    try
+                    {
+                        //kijk of het profiel aan staat
+                        if (!mobielState.Contains("connected"))
+                        {
+                            connectToMobiel(false);
+                            ColorTextAlert("mobiel not connected");
+                        }
+                        else if (mobielState.Contains("connected"))
+                        {
+                            //connect to profiel                           
+                            filesystemwatcher_keepconnected();
+                        }
+                    }
+                    catch (NullReferenceException e)
+                    {
+                        ColorTextAlert("No mobile interface found on the system");
+                        return;
+                    }
                 }
             }
 
 
-            //check if there is a wifi connection interface 
-            if (output.Contains("There is no wireless interface on the system"))
+            if (wlanState != null)
             {
-                enableWiFi();
-                createWifiProfile();
-                return;
-            }
-            else
-            {
-                try
+                //check if there is a wifi connection interface 
+                if (output.Contains("There is no wireless interface on the system"))
                 {
-                    if (!wlanState.Contains("connected"))
+                    enableWiFi();
+                    //if wifi is enabled
+                    string wlanenabled = WlanState();
+                    if (wlanenabled.Contains("enabled"))
                     {
-                        ColorTextAlert("wifi is not connected");
-                        connectToWifi(false);
+                        createWifiProfile();
                     }
                 }
-                catch (NullReferenceException e)
+                else
                 {
-                    ColorTextAlert("No Wlan interface found on the system" + e);
+                    try
+                    {
+
+                        if (!wlanState.Contains("connected"))
+                        {
+                            //so create wlan profiel
+                            ColorTextAlert("wifi is not connected");
+                            connectToWifi(false);
+                        }
+                        else if (wlanState.Contains("connected"))
+                        {
+                            filesystemwatcher_keepconnected();
+                            return;
+                        }
+                    }
+                    catch (NullReferenceException e)
+                    {
+                        ColorTextAlert("No Wlan interface found on the system" + e);
+                        return;
+                    }
                 }
             }
+
             Console.Read();
-            filesystemwatcher_keepconnected();
         }
 
         private static void ColorTextAlert(string message)
@@ -168,19 +217,22 @@ namespace BarningConnectionManager
             File.WriteAllText(DataFileMobiel, profileXml);
             ColorText("Mobile profile was succesfully updated.");
         }
-        private static void ColorTextQuestion(string message)
-        {
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine(message);
-            Console.ResetColor();
-        }
         private static void enableWiFi()
         {
+            string adaptor_state = WlanState();
             System.Diagnostics.Process proc = new System.Diagnostics.Process();
             proc.StartInfo.FileName = "C:\\batchfiles\\wlanconnectVRH\\installwlan.cmd";
             proc.StartInfo.WorkingDirectory = "C:\\batchfiles";
             proc.Start();
-            ColorText("WIFI enabled :-)");
+            if (adaptor_state.Contains("enabled"))
+            {
+                ColorText("WIFI enabled :-)");
+            }
+            else
+            {
+                ColorTextAlert("please run application as admin");
+                return;
+            }
         }
         private static void connectToWifi(bool connected)
         {
