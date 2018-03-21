@@ -83,7 +83,7 @@ namespace BarningConnectionManager
                 StartInfo =
                       {
                           FileName = "netsh.exe",
-                          Arguments = "mbn show interfaces",
+                          Arguments = "mbn show interface",
                           UseShellExecute = false,
                           RedirectStandardOutput = true,
                           CreateNoWindow = true
@@ -95,38 +95,40 @@ namespace BarningConnectionManager
             var lanState = lanOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("Connect state"));
             var wlanState = output.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("State"));
             var mobielState = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("State"));
+            var mobielnotPresent = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("Mobile Broadband Service (wwansvc) is not running."));
+            var mobielDisabled = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("There is no Mobile Broadband interface"));
 
 
-            if (mobielState != null)
-            {           //als er geen mobiel adaptor loopt
+
+            //als er geen mobiel adaptor loopt
+            if (MOutput.Contains("Mobile Broadband Service (wwansvc) is not running."))
+            {
                 if (MOutput.Contains("There is no Mobile Broadband interface"))
                 {
                     enableMobiel();
-                    createMobileProfile();
                 }
-                else
+                try
                 {
-                    try
+                    //kijk of het profiel aan staat
+                    if (!mobielState.Contains("connected"))
                     {
-                        //kijk of het profiel aan staat
-                        if (!mobielState.Contains("connected"))
-                        {
-                            connectToMobiel(false);
-                            ColorTextAlert("mobiel not connected");
-                        }
-                        else if (mobielState.Contains("connected"))
-                        {
-                            //connect to profiel                           
-                            filesystemwatcher_keepconnected();
-                        }
+                        createMobileProfile();
+                        connectToMobiel(false);
+                        ColorTextAlert("mobiel not connected");
                     }
-                    catch (NullReferenceException e)
+                    else if (mobielState.Contains("connected"))
                     {
-                        ColorTextAlert("No mobile interface found on the system");
-                        return;
+                        //connect to profiel                           
+                        filesystemwatcher_keepconnected();
                     }
+                }
+                catch (NullReferenceException e)
+                {
+                    ColorTextAlert("No mobile interface found on the system");
+                    return;
                 }
             }
+
 
 
             if (wlanState != null)
@@ -146,7 +148,6 @@ namespace BarningConnectionManager
                 {
                     try
                     {
-
                         if (!wlanState.Contains("connected"))
                         {
                             //so create wlan profiel
