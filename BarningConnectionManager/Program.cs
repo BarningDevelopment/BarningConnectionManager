@@ -64,20 +64,6 @@ namespace BarningConnectionManager
             process.Start();
             var output = process.StandardOutput.ReadToEnd();
 
-            var lanProcess = new Process
-            {
-                StartInfo =
-                      {
-                          FileName = "netsh.exe",
-                          Arguments = "interface show interface name=\"Ethernet\" ",
-                          UseShellExecute = false,
-                          RedirectStandardOutput = true,
-                          CreateNoWindow = true
-                      }
-            };
-            lanProcess.Start();
-            var lanOutput = lanProcess.StandardOutput.ReadToEnd();
-
             var MProcess = new Process
             {
                 StartInfo =
@@ -92,83 +78,70 @@ namespace BarningConnectionManager
             MProcess.Start();
             var MOutput = MProcess.StandardOutput.ReadToEnd();
 
-            var lanState = lanOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("Connect state"));
+            var wlanEnabled = output.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("There is no wireless interface on the system."));
             var wlanState = output.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("State"));
-            var mobielState = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("State"));
-            var mobielnotPresent = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("Mobile Broadband Service (wwansvc) is not running."));
-            var mobielDisabled = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("There is no Mobile Broadband interface"));
+            var mobileState = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("State"));
+            var mobileEnabled = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("There is no Mobile Broadband interface"));
 
-
-
-            //als er geen mobiel adaptor loopt
-            if (MOutput.Contains("Mobile Broadband Service (wwansvc) is not running."))
+            if (!MOutput.Contains("Mobile Broadband Service (wwansvc) is not running."))
             {
+
                 if (MOutput.Contains("There is no Mobile Broadband interface"))
                 {
+                    ColorTextAlert("enable mobiel");
                     enableMobiel();
                 }
+                else
+                {
+                    if (mobileState != null)
+                    {
+                        //dont change the words
+                        if (mobileState.Contains("Not connected"))
+                        {
+                            ColorTextAlert("Connecting to mobile.......");
+                            connectToMobiel(false);
+                        }
+                        else if (mobileState.Contains("connected"))
+                        {
+                            ColorTextAlert("Connecting to mobile.......");
+                        }
+                    }
+                }
+                ColorText("Mobile interface is enabled.");
+            }
+
+
+
+            //check if there is a wifi connection interface 
+            if (output.Contains("There is no wireless interface on the system"))
+            {
+                enableWiFi();
+            }
+            else
+            {
                 try
                 {
-                    //kijk of het profiel aan staat
-                    if (!mobielState.Contains("connected"))
+                    //dont change the words
+                    if (wlanState.Contains("disconnected"))
                     {
-                        createMobileProfile();
-                        connectToMobiel(false);
-                        ColorTextAlert("mobiel not connected");
+                        ColorTextAlert("connecting.......");
+                        connectToWifi(false);
                     }
-                    else if (mobielState.Contains("connected"))
+                    else if (wlanState.Contains("connected"))
                     {
-                        //connect to profiel                           
-                        filesystemwatcher_keepconnected();
+                        ColorText("Connected to Wifi ,you re welcome. ;-)");
                     }
                 }
                 catch (NullReferenceException e)
                 {
-                    ColorTextAlert("No mobile interface found on the system");
-                    return;
+                    ColorTextAlert("No Wlan interface found on the system" + e);
                 }
             }
 
-
-
-            if (wlanState != null)
-            {
-                //check if there is a wifi connection interface 
-                if (output.Contains("There is no wireless interface on the system"))
-                {
-                    enableWiFi();
-                    //if wifi is enabled
-                    string wlanenabled = WlanState();
-                    if (wlanenabled.Contains("enabled"))
-                    {
-                        createWifiProfile();
-                    }
-                }
-                else
-                {
-                    try
-                    {
-                        if (!wlanState.Contains("connected"))
-                        {
-                            //so create wlan profiel
-                            ColorTextAlert("wifi is not connected");
-                            connectToWifi(false);
-                        }
-                        else if (wlanState.Contains("connected"))
-                        {
-                            filesystemwatcher_keepconnected();
-                            return;
-                        }
-                    }
-                    catch (NullReferenceException e)
-                    {
-                        ColorTextAlert("No Wlan interface found on the system" + e);
-                        return;
-                    }
-                }
-            }
-
+            filesystemwatcher_keepconnected();
             Console.Read();
+
+
         }
 
         private static void ColorTextAlert(string message)
@@ -190,11 +163,18 @@ namespace BarningConnectionManager
         {
             if (connected == false)
             {
-                Process proc = new Process();
-                proc.StartInfo.FileName = "C:\\batchfiles\\mobielconnect_netsh_VRH\\connect.cmd";
-                proc.StartInfo.WorkingDirectory = "C:\\batchfiles";
-                proc.Start();
-                ColorText("connected to the Mobiel internet, your welcome. ;-)");
+                if (File.Exists("c:\\batchfiles\\mobielconnect_netsh_VRH\\MBNProfile2.xml"))
+                {
+                    Process proc = new Process();
+                    proc.StartInfo.FileName = "C:\\batchfiles\\mobielconnect_netsh_VRH\\connectMobiel.cmd";
+                    proc.StartInfo.WorkingDirectory = "C:\\batchfiles";
+                    proc.Start();
+                    ColorText("connected to the Mobiel internet, your welcome. ;-)");
+                }
+                else
+                {
+                    createMobileProfile();
+                }
             }
         }
         private static void createMobileProfile()
@@ -225,15 +205,6 @@ namespace BarningConnectionManager
             proc.StartInfo.FileName = "C:\\batchfiles\\wlanconnectVRH\\installwlan.cmd";
             proc.StartInfo.WorkingDirectory = "C:\\batchfiles";
             proc.Start();
-            if (adaptor_state.Contains("enabled"))
-            {
-                ColorText("WIFI enabled :-)");
-            }
-            else
-            {
-                ColorTextAlert("please run application as admin");
-                return;
-            }
         }
         private static void connectToWifi(bool connected)
         {
@@ -246,6 +217,10 @@ namespace BarningConnectionManager
                     proc.StartInfo.WorkingDirectory = "C:\\batchfiles";
                     proc.Start();
                     ColorText("connected to the WIFI internet, your welcome. ;=)");
+                }
+                else
+                {
+                    createWifiProfile();
                 }
             }
         }
