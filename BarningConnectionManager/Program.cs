@@ -82,31 +82,33 @@ namespace BarningConnectionManager
             var wlanState = output.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("State"));
             var mobileState = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("State"));
             var mobileEnabled = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("There is no Mobile Broadband interface"));
+            var mobilePaused = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("Provider Name"));
 
+            //check if there is a mobile device
             if (!MOutput.Contains("Mobile Broadband Service (wwansvc) is not running."))
             {
-
-                if (MOutput.Contains("There is no Mobile Broadband interface"))
+                //check if there is a mobile interface enabled
+                if (MOutput.Contains("There is no Mobile Broadband interface") || mobilePaused.Contains(""))
                 {
                     ColorTextAlert("enable mobiel");
                     enableMobiel();
                 }
-                else
+
+                //check connection status
+                if (mobileState != null)
                 {
-                    if (mobileState != null)
+                    //dont change the words
+                    if (mobileState.Contains("Not connected"))
                     {
-                        //dont change the words
-                        if (mobileState.Contains("Not connected"))
-                        {
-                            ColorTextAlert("Connecting to mobile.......");
-                            connectToMobiel(false);
-                        }
-                        else if (mobileState.Contains("connected"))
-                        {
-                            ColorTextAlert("Connecting to mobile.......");
-                        }
+                        ColorTextAlert("Connecting to mobile.......");
+                        connectToMobiel(false);
+                    }
+                    else if (mobileState.Contains("connected"))
+                    {
+                        ColorTextAlert("Connecting to mobile.......");
                     }
                 }
+
                 ColorText("Mobile interface is enabled.");
             }
 
@@ -134,6 +136,7 @@ namespace BarningConnectionManager
                 }
                 catch (NullReferenceException e)
                 {
+
                     ColorTextAlert("No Wlan interface found on the system" + e);
                 }
             }
