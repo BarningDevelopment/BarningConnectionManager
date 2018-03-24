@@ -88,7 +88,7 @@ namespace BarningConnectionManager
             if (!MOutput.Contains("Mobile Broadband Service (wwansvc) is not running."))
             {
                 //check if there is a mobile interface enabled
-                if (MOutput.Contains("There is no Mobile Broadband interface") || mobilePaused.Contains(""))
+                if (MOutput.Contains("There is no Mobile Broadband interface"))
                 {
                     ColorTextAlert("enable mobiel");
                     enableMobiel();
@@ -103,9 +103,13 @@ namespace BarningConnectionManager
                         ColorTextAlert("Connecting to mobile.......");
                         connectToMobiel(false);
                     }
-                    else if (mobileState.Contains("connected"))
+                    if (mobileState.Contains("connected"))
                     {
-                        ColorTextAlert("Connecting to mobile.......");
+                        ColorText("Connected to mobiel ,you`re welcome. ;-)");
+                    }
+
+                    if (!mobilePaused.Contains("KPN"){
+
                     }
                 }
 
