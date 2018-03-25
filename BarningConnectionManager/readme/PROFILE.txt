@@ -1,0 +1,9 @@
+Fabrikant:	Sierra Wireless, Incorporated
+Model:	MC7305
+Firmware:	SWI9X15C_01.12
+Type netwerk:	GSM
+Gegevensklasse:	GPRS; EDGE; UMTS; HSDPA; HSUPA; LTE
+IMEI:	353515050094929
+Mobiel nummer:	
+IMSI:	204080806249858
+ICCID van simkaart:	8931087115077657088

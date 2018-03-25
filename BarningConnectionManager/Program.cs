@@ -90,10 +90,9 @@ namespace BarningConnectionManager
                 //check if there is a mobile interface enabled
                 if (MOutput.Contains("There is no Mobile Broadband interface"))
                 {
-                    ColorTextAlert("enable mobiel");
+                    ColorTextAlert("enable mobiel interface...");
                     enableMobiel();
                 }
-
                 //check connection status
                 if (mobileState != null)
                 {
@@ -107,13 +106,7 @@ namespace BarningConnectionManager
                     {
                         ColorText("Connected to mobiel ,you`re welcome. ;-)");
                     }
-
-                    if (!mobilePaused.Contains("KPN"){
-
-                    }
                 }
-
-                ColorText("Mobile interface is enabled.");
             }
 
 
@@ -192,18 +185,18 @@ namespace BarningConnectionManager
             string profileName = Console.ReadLine();
             string profileNameEncoded = WebUtility.HtmlEncode(profileName);
 
-            Console.WriteLine("put in youre SubscriberID.");
+            ColorTextQuestion("put in youre IMSI number");
             string SubscriberID = Console.ReadLine();
             //string SubscriberID = "204080806249858";
 
-            Console.WriteLine("put in you`re Simiccd  Password, enter to confirm");
+            ColorTextQuestion("put in you`re SimICCD number, enter to confirm");
             string Simiccd = Console.ReadLine();
             // string Simiccd = "8931087115077657088";
 
             string profileXml = string.Format("<?xml version=\"1.0\"?><MBNProfileExt xmlns = \"http://www.microsoft.com/networking/WWAN/profile/v4\"><Name>{0}</Name><Description>ModemProvisionedProfile##vzwinternet</Description><IsDefault>true</IsDefault><ProfileCreationType>DeviceProvisioned</ProfileCreationType><SubscriberID>{1}</SubscriberID><SimIccID>{2}</SimIccID><HomeProviderName>KPN</HomeProviderName><AutoConnectOnInternet>true</AutoConnectOnInternet><ConnectionMode>auto</ConnectionMode><Context><AccessString>vzwinternet</AccessString><Compression>DISABLE</Compression><AuthProtocol>NONE</AuthProtocol></Context><IsBasedOnModemProvisionedContext xmlns =\"http://www.microsoft.com/networking/WWAN/profile/v7\">true</IsBasedOnModemProvisionedContext></MBNProfileExt>", profileNameEncoded, SubscriberID, Simiccd);
 
             File.WriteAllText(DataFileMobiel, profileXml);
-            ColorText("Mobile profile was succesfully updated.");
+            ColorText("Mobile profile was succesfully updated (enter to confirm)");
         }
         private static void enableWiFi()
         {
@@ -223,7 +216,7 @@ namespace BarningConnectionManager
                     proc.StartInfo.FileName = "C:\\batchfiles\\wlanconnectVRH\\installwlan.cmd";
                     proc.StartInfo.WorkingDirectory = "C:\\batchfiles";
                     proc.Start();
-                    ColorText("connected to the WIFI internet, your welcome. ;=)");
+                    ColorText("connected to the WIFI internet, your welcome. ;-)");
                 }
                 else
                 {
@@ -233,8 +226,7 @@ namespace BarningConnectionManager
         }
         public static void createWifiProfile()
         {
-            bool connect = false;
-            // Connects to a known network with no security
+            // Connects to a known network with hashed password security
             ColorTextQuestion("put in youre SSID name.");
             string profileName = Console.ReadLine();
             string profileNameEncoded = WebUtility.HtmlEncode(profileName);

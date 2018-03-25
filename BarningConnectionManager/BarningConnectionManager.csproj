@@ -102,8 +102,10 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="readme\Als admin uitvoeren.PNG" />
     <Content Include="readme\manual.txt" />
     <Content Include="readme\mobielAPN.PNG" />
+    <Content Include="readme\PROFILE.txt" />
     <Content Include="readme\proxysettings.PNG" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

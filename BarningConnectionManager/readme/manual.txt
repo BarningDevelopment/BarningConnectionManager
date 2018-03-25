@@ -183,6 +183,14 @@ https://answers.microsoft.com/en-us/windows/forum/windows8_1-networking/broadban
 if NOT ["%errorlevel%"]==["0"] pause
 
 
+problemen:
+programma draaien als 86X bit werkt wel voor wifi maar niet voor mobiel
+
+https://superuser.com/questions/1301072/turn-on-wi-fi-via-command-line
+het is onmogelijk om de status switch on or off te  wijzigen.
+
+
+
 Doelstelling project
 Verbinding maken met mobiel netwer
 1. Opdrachtformulering
