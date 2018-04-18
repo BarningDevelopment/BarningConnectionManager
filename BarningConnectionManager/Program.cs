@@ -102,10 +102,6 @@ namespace BarningConnectionManager
             var mobilePaused = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("Provider Name"));
             var deviceId = profileOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("Device Id"));
 
-
-            Console.WriteLine(xml_subscriberId());
-
-
             //check if there is a mobile device
             if (!MOutput.Contains("Mobile Broadband Service (wwansvc) is not running."))
             {
@@ -118,8 +114,9 @@ namespace BarningConnectionManager
                         //check if sim is already known bij the system
                         //compare the deice id from the system with the subscriberid(emei) of the profile
                         //if there is a match the continue else create the profile                          
-                        if (deviceId == xml_subscriberId())
+                        if (deviceId != xml_subscriberId())
                         {
+                            ColorTextAlert("simkard is not known to the system");
                             createMobileProfile();
                         }
                         else
@@ -169,7 +166,6 @@ namespace BarningConnectionManager
                 }
                 catch (NullReferenceException e)
                 {
-
                     ColorTextAlert("No Wlan interface found on the system" + e);
                 }
             }
@@ -189,10 +185,14 @@ namespace BarningConnectionManager
             //the regreplacement string
             //http://regexstorm.net/tester
             Regex rgx = new Regex(@"MBNProfileExt\s(\w{5})(\W{4})(\w{4}\W{3}\w{3}\W{1}\w{9}\W{1}\w{3}\W{1}\w{10}\W{1}\w{4}\W{1}\w{7}\W{1}\w{2}\W{1})");
+            //replace the input with the one you want
             string result = rgx.Replace(input, replacement);
+            //load xml doc
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(result);
+            //find the node you want
             XmlNode node = doc.DocumentElement.SelectSingleNode("SubscriberID");
+            //convert to string
             string text = node.InnerText;
             return text;
         }
@@ -240,7 +240,7 @@ namespace BarningConnectionManager
 
             ColorTextQuestion("put in you`r EMEI number");
             string DeviceId = Console.ReadLine();
-            //string SubscriberID = "204080806249858";
+            //string SubscriberID = "353515050094929";
 
             ColorTextQuestion("put in you`re SimICCD number, enter to confirm");
             string Simiccd = Console.ReadLine();
