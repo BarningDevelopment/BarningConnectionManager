@@ -3,6 +3,10 @@ using System.Linq;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Xml.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Xml;
 
 namespace BarningConnectionManager
 {
@@ -11,7 +15,6 @@ namespace BarningConnectionManager
         public static string DataFileMobiel = "C:/batchfiles/mobielconnect_netsh_VRH/MBNProfile2.xml";
         public static string DataFile = "C:/batchfiles/wlanconnectVRH/wlanconnectWlanprofile.xml";
         public static string Content = "(Empty File)";
-        private static bool profile;
 
         static void ColorText(string Message)
         {
@@ -78,35 +81,68 @@ namespace BarningConnectionManager
             MProcess.Start();
             var MOutput = MProcess.StandardOutput.ReadToEnd();
 
+            var profileProcess = new Process
+            {
+                StartInfo =
+                      {
+                          FileName = "netsh.exe",
+                          Arguments = "mbn show interface BarningMobiel",
+                          UseShellExecute = false,
+                          RedirectStandardOutput = true,
+                          CreateNoWindow = true
+                      }
+            };
+            profileProcess.Start();
+            var profileOutput = profileProcess.StandardOutput.ReadToEnd();
+
             var wlanEnabled = output.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("There is no wireless interface on the system."));
             var wlanState = output.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("State"));
             var mobileState = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("State"));
             var mobileEnabled = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("There is no Mobile Broadband interface"));
             var mobilePaused = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("Provider Name"));
+            var deviceId = profileOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("Device Id"));
+
+
+            Console.WriteLine(xml_subscriberId());
+
 
             //check if there is a mobile device
             if (!MOutput.Contains("Mobile Broadband Service (wwansvc) is not running."))
             {
-                //check if there is a mobile interface enabled
-                if (MOutput.Contains("There is no Mobile Broadband interface"))
+                //if there is a mobile interface enabled
+                if (!MOutput.Contains("There is no Mobile Broadband interface"))
+                {
+                    //check connection status
+                    if (mobileState != null)
+                    {
+                        //check if sim is already known bij the system
+                        //compare the deice id from the system with the subscriberid(emei) of the profile
+                        //if there is a match the continue else create the profile                          
+                        if (deviceId == xml_subscriberId())
+                        {
+                            createMobileProfile();
+                        }
+                        else
+                        {
+                            //dont change the words
+                            if (mobileState.Contains("Not connected"))
+                            {
+                                ColorTextAlert("Connecting to mobile.......");
+                                connectToMobiel(false);
+                            }
+                            else if (mobileState.Contains("connected"))
+                            {
+                                ColorText("Connected to mobiel ,you`re welcome. ;-)");
+                            }
+                        }
+                    }
+                }
+                else if (MOutput.Contains("There is no Mobile Broadband interface"))
                 {
                     ColorTextAlert("enable mobiel interface...");
                     enableMobiel();
                 }
-                //check connection status
-                if (mobileState != null)
-                {
-                    //dont change the words
-                    if (mobileState.Contains("Not connected"))
-                    {
-                        ColorTextAlert("Connecting to mobile.......");
-                        connectToMobiel(false);
-                    }
-                    if (mobileState.Contains("connected"))
-                    {
-                        ColorText("Connected to mobiel ,you`re welcome. ;-)");
-                    }
-                }
+
             }
 
 
@@ -123,7 +159,7 @@ namespace BarningConnectionManager
                     //dont change the words
                     if (wlanState.Contains("disconnected"))
                     {
-                        ColorTextAlert("connecting.......");
+                        ColorTextAlert("connecting to Wi-Fi......");
                         connectToWifi(false);
                     }
                     else if (wlanState.Contains("connected"))
@@ -142,6 +178,23 @@ namespace BarningConnectionManager
             Console.Read();
 
 
+        }
+
+        private static string xml_subscriberId()
+        {
+            //read date from file
+            var input = File.ReadAllText(DataFileMobiel);
+            //the replacement string
+            string replacement = "MBNProfileExt";
+            //the regreplacement string
+            //http://regexstorm.net/tester
+            Regex rgx = new Regex(@"MBNProfileExt\s(\w{5})(\W{4})(\w{4}\W{3}\w{3}\W{1}\w{9}\W{1}\w{3}\W{1}\w{10}\W{1}\w{4}\W{1}\w{7}\W{1}\w{2}\W{1})");
+            string result = rgx.Replace(input, replacement);
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(result);
+            XmlNode node = doc.DocumentElement.SelectSingleNode("SubscriberID");
+            string text = node.InnerText;
+            return text;
         }
 
         private static void ColorTextAlert(string message)
@@ -179,21 +232,21 @@ namespace BarningConnectionManager
         }
         private static void createMobileProfile()
         {
-            bool connect = false;
+
             // Connects to a known network with no security
             ColorTextQuestion("put in youre mobile profile name ");
             string profileName = Console.ReadLine();
             string profileNameEncoded = WebUtility.HtmlEncode(profileName);
 
-            ColorTextQuestion("put in youre IMSI number");
-            string SubscriberID = Console.ReadLine();
+            ColorTextQuestion("put in you`r EMEI number");
+            string DeviceId = Console.ReadLine();
             //string SubscriberID = "204080806249858";
 
             ColorTextQuestion("put in you`re SimICCD number, enter to confirm");
             string Simiccd = Console.ReadLine();
             // string Simiccd = "8931087115077657088";
 
-            string profileXml = string.Format("<?xml version=\"1.0\"?><MBNProfileExt xmlns = \"http://www.microsoft.com/networking/WWAN/profile/v4\"><Name>{0}</Name><Description>ModemProvisionedProfile##vzwinternet</Description><IsDefault>true</IsDefault><ProfileCreationType>DeviceProvisioned</ProfileCreationType><SubscriberID>{1}</SubscriberID><SimIccID>{2}</SimIccID><HomeProviderName>KPN</HomeProviderName><AutoConnectOnInternet>true</AutoConnectOnInternet><ConnectionMode>auto</ConnectionMode><Context><AccessString>vzwinternet</AccessString><Compression>DISABLE</Compression><AuthProtocol>NONE</AuthProtocol></Context><IsBasedOnModemProvisionedContext xmlns =\"http://www.microsoft.com/networking/WWAN/profile/v7\">true</IsBasedOnModemProvisionedContext></MBNProfileExt>", profileNameEncoded, SubscriberID, Simiccd);
+            string profileXml = string.Format("<?xml version=\"1.0\"?><MBNProfileExt xmlns = \"http://www.microsoft.com/networking/WWAN/profile/v4\"><Name>{0}</Name><Description>ModemProvisionedProfile##vzwinternet</Description><IsDefault>true</IsDefault><ProfileCreationType>DeviceProvisioned</ProfileCreationType><SubscriberID>{1}</SubscriberID><SimIccID>{2}</SimIccID><HomeProviderName>KPN</HomeProviderName><AutoConnectOnInternet>true</AutoConnectOnInternet><ConnectionMode>auto</ConnectionMode><Context><AccessString>vzwinternet</AccessString><Compression>DISABLE</Compression><AuthProtocol>NONE</AuthProtocol></Context><IsBasedOnModemProvisionedContext xmlns =\"http://www.microsoft.com/networking/WWAN/profile/v7\">true</IsBasedOnModemProvisionedContext></MBNProfileExt>", profileNameEncoded, DeviceId, Simiccd);
 
             File.WriteAllText(DataFileMobiel, profileXml);
             ColorText("Mobile profile was succesfully updated (enter to confirm)");
