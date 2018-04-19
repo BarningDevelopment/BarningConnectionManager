@@ -238,7 +238,7 @@ namespace BarningConnectionManager
             string profileName = Console.ReadLine();
             string profileNameEncoded = WebUtility.HtmlEncode(profileName);
 
-            ColorTextQuestion("put in you`r EMEI number");
+            ColorTextQuestion("put in you`r IMEI number");
             string DeviceId = Console.ReadLine();
             //string SubscriberID = "353515050094929";
 
