@@ -102,6 +102,17 @@ namespace BarningConnectionManager
             var mobilePaused = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("Provider Name"));
             var deviceId = profileOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("Device Id"));
 
+            //get the value from the string
+            string deviceIdstring = Regex.Match(deviceId, @"\d+").Value;
+            //convert to decimal becouse the value is more than the int.max number(9digits)
+            decimal deviceIdInt = 0;
+            //parse
+            deviceIdInt = Decimal.Parse(deviceIdstring);
+            //do the same with the xml number
+            decimal xml_subscriberIdInt = 0;
+            xml_subscriberIdInt = decimal.Parse(xml_subscriberId());
+
+
             //check if there is a mobile device
             if (!MOutput.Contains("Mobile Broadband Service (wwansvc) is not running."))
             {
@@ -114,13 +125,14 @@ namespace BarningConnectionManager
                         //check if sim is already known bij the system
                         //compare the deice id from the system with the subscriberid(emei) of the profile
                         //if there is a match the continue else create the profile                          
-                        if (deviceId != xml_subscriberId())
+                        if (deviceIdInt != xml_subscriberIdInt)
                         {
-                            ColorTextAlert("simkard is not known to the system");
+                            ColorTextAlert("deviceid number from netsh =" + deviceIdInt + "Imei number from profile =" + xml_subscriberIdInt + " are not the same");
                             createMobileProfile();
                         }
                         else
                         {
+                            ColorTextAlert("deviceid number from netsh =" + deviceIdInt + "Imei number from profile =" + xml_subscriberIdInt + "are the same");
                             //dont change the words
                             if (mobileState.Contains("Not connected"))
                             {
