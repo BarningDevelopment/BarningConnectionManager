@@ -3,10 +3,9 @@ using System.Linq;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
-using System.Xml.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
+using MbnApi;
 
 namespace BarningConnectionManager
 {
@@ -15,6 +14,7 @@ namespace BarningConnectionManager
         public static string DataFileMobiel = "C:/batchfiles/mobielconnect_netsh_VRH/MBNProfile2.xml";
         public static string DataFile = "C:/batchfiles/wlanconnectVRH/wlanconnectWlanprofile.xml";
         public static string Content = "(Empty File)";
+        private static string SIMNumber;
 
         static void ColorText(string Message)
         {
@@ -100,17 +100,46 @@ namespace BarningConnectionManager
             var mobileState = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("State"));
             var mobileEnabled = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("There is no Mobile Broadband interface"));
             var mobilePaused = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("Provider Name"));
-            var deviceId = profileOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("Device Id"));
+            //var deviceId = profileOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("Device Id"));
 
-            //get the value from the string
-            string deviceIdstring = Regex.Match(deviceId, @"\d+").Value;
-            //convert to decimal becouse the value is more than the int.max number(9digits)
-            decimal deviceIdInt = 0;
-            //parse
-            deviceIdInt = Decimal.Parse(deviceIdstring);
-            //do the same with the xml number
-            decimal xml_subscriberIdInt = 0;
-            xml_subscriberIdInt = decimal.Parse(xml_subscriberId());
+
+            try
+            {
+                MbnInterfaceManager mbnInfMgr = new MbnInterfaceManager();
+                IMbnInterfaceManager mbnInfMgrInterface = mbnInfMgr as IMbnInterfaceManager;
+                if (mbnInfMgrInterface != null)
+                {
+                    IMbnInterface[] mobileInterfaces = mbnInfMgrInterface.GetInterfaces() as IMbnInterface[];
+                    if (mobileInterfaces != null && mobileInterfaces.Length > 0)
+                    {
+                        // Just use the first interface
+                        IMbnSubscriberInformation subInfo = mobileInterfaces[0].GetSubscriberInformation();
+
+                        Console.WriteLine(subInfo);
+
+                        if (subInfo != null)
+                        {
+                            SIMNumber = subInfo.SimIccID;
+
+                            Console.WriteLine(SIMNumber);
+                            // Get the connection profile
+                            MbnConnectionProfileManager mbnConnProfileMgr = new MbnConnectionProfileManager();
+                            IMbnConnectionProfileManager mbnConnProfileMgrInterface = mbnConnProfileMgr as IMbnConnectionProfileManager;
+                            if (mbnConnProfileMgrInterface != null)
+                            {
+                                bool connProfileFound = false;
+                                string profileName = String.Empty;
+                                Console.WriteLine(profileOutput);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+
 
 
             //check if there is a mobile device
@@ -124,6 +153,15 @@ namespace BarningConnectionManager
                     {
                         //check if sim is already known bij the system
                         //compare the deice id from the system with the subscriberid(emei) of the profile
+                        //get the value from the string
+                        string deviceIdstring = Regex.Match(SIMNumber, @"\d+").Value;
+                        //convert to decimal becouse the value is more than the int.max number(9digits)
+                        decimal deviceIdInt = 0;
+                        //parse
+                        deviceIdInt = Decimal.Parse(deviceIdstring);
+                        //do the same with the xml number
+                        decimal xml_subscriberIdInt = 0;
+                        xml_subscriberIdInt = decimal.Parse(xml_subscriberId());
                         //if there is a match the continue else create the profile                          
                         if (deviceIdInt != xml_subscriberIdInt)
                         {
@@ -132,7 +170,7 @@ namespace BarningConnectionManager
                         }
                         else
                         {
-                            ColorTextAlert("deviceid number from netsh =" + deviceIdInt + "Imei number from profile =" + xml_subscriberIdInt + "are the same");
+                            // ColorTextAlert("deviceid number from netsh =" + deviceIdInt + "Imei number from profile =" + xml_subscriberIdInt + "are the same");
                             //dont change the words
                             if (mobileState.Contains("Not connected"))
                             {
