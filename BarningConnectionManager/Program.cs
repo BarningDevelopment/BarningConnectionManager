@@ -136,7 +136,7 @@ namespace BarningConnectionManager
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                // Console.WriteLine(e);
             }
 
             //check if there is a mobile device
@@ -286,13 +286,12 @@ namespace BarningConnectionManager
             string profileName = Console.ReadLine();
             string profileNameEncoded = WebUtility.HtmlEncode(profileName);
 
-            ColorTextQuestion("put in you`r IMEI number");
+            ColorTextQuestion("put in you`r IMSI number");
             string DeviceId = Console.ReadLine();
-            //string SubscriberID = "353515050094929";
 
             ColorTextQuestion("put in you`re SimICCD number, enter to confirm");
             string Simiccd = Console.ReadLine();
-            // string Simiccd = "8931087115077657088";
+            //string Simiccd = "8931087115077657088";
 
             string profileXml = string.Format("<?xml version=\"1.0\"?><MBNProfileExt xmlns = \"http://www.microsoft.com/networking/WWAN/profile/v4\"><Name>{0}</Name><Description>ModemProvisionedProfile##vzwinternet</Description><IsDefault>true</IsDefault><ProfileCreationType>DeviceProvisioned</ProfileCreationType><SubscriberID>{1}</SubscriberID><SimIccID>{2}</SimIccID><HomeProviderName>KPN</HomeProviderName><AutoConnectOnInternet>true</AutoConnectOnInternet><ConnectionMode>auto</ConnectionMode><Context><AccessString>vzwinternet</AccessString><Compression>DISABLE</Compression><AuthProtocol>NONE</AuthProtocol></Context><IsBasedOnModemProvisionedContext xmlns =\"http://www.microsoft.com/networking/WWAN/profile/v7\">true</IsBasedOnModemProvisionedContext></MBNProfileExt>", profileNameEncoded, DeviceId, Simiccd);
 
