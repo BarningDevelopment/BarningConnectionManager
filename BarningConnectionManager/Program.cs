@@ -100,9 +100,8 @@ namespace BarningConnectionManager
             var mobileState = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("State"));
             var mobileEnabled = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("There is no Mobile Broadband interface"));
             var mobilePaused = MOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("Provider Name"));
-            //var deviceId = profileOutput.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.Contains("Device Id"));
 
-
+            //get the simcard information
             try
             {
                 MbnInterfaceManager mbnInfMgr = new MbnInterfaceManager();
@@ -140,8 +139,6 @@ namespace BarningConnectionManager
                 Console.WriteLine(e);
             }
 
-
-
             //check if there is a mobile device
             if (!MOutput.Contains("Mobile Broadband Service (wwansvc) is not running."))
             {
@@ -152,7 +149,8 @@ namespace BarningConnectionManager
                     if (mobileState != null)
                     {
                         //check if sim is already known bij the system
-                        //compare the deice id from the system with the subscriberid(emei) of the profile
+                        //compare the device id from the system with the simsccid(emei) of the profile
+
                         //get the value from the string
                         string deviceIdstring = Regex.Match(SIMNumber, @"\d+").Value;
                         //convert to decimal becouse the value is more than the int.max number(9digits)
@@ -165,7 +163,7 @@ namespace BarningConnectionManager
                         //if there is a match the continue else create the profile                          
                         if (deviceIdInt != xml_subscriberIdInt)
                         {
-                            ColorTextAlert("deviceid number from netsh =" + deviceIdInt + "Imei number from profile =" + xml_subscriberIdInt + " are not the same");
+                            ColorTextAlert("simiccid number from mbnapi =" + deviceIdInt + "simicc number from profile =" + xml_subscriberIdInt + " are not the same");
                             createMobileProfile();
                         }
                         else
@@ -241,7 +239,7 @@ namespace BarningConnectionManager
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(result);
             //find the node you want
-            XmlNode node = doc.DocumentElement.SelectSingleNode("SubscriberID");
+            XmlNode node = doc.DocumentElement.SelectSingleNode("SimIccID");
             //convert to string
             string text = node.InnerText;
             return text;
